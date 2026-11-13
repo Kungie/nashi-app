@@ -43,14 +43,14 @@ public sealed class GlobalDragController:IDisposable
     private static bool Held(int key)=>(GetAsyncKeyState(key)&0x8000)!=0;
     /// True while the key or mouse button part of a drag shortcut is held.
     internal static bool TriggerHeld(string trigger)=>trigger switch{"Right Click"=>PrimaryMouseButton.SecondaryIsPressed,"Middle Click"=>Held(0x04),"Mouse 4"=>Held(0x05),"Mouse 5"=>Held(0x06),_=>Enum.TryParse<Key>(trigger,out var key)&&Held(KeyInterop.VirtualKeyFromKey(key))};
-    private string Chord(){var parts=new List<string>();if(Held(0x11))parts.Add("Ctrl");if(Held(0x10))parts.Add("Shift");if(Held(0x12))parts.Add("Alt");return string.Join('+',parts);}
+    private string Chord()=>DragChord.Name(Held(0x11),Held(0x10),Held(0x12));
     /// Runs on the timer: once a primary-button drag moves, opens the wheel whose shortcut is held.
     private void Poll()
     {
         UpdateShortcut();if(!preferences.Value.Enabled||!OwnerAvailable){wheel?.Close();wheel=null;down=false;opened=false;hint=null;return;}var held=PrimaryMouseButton.IsPressed;GetCursorPos(out var point);
         if(!held){if(down){down=false;opened=false;hint=null;if(wheel is {IsVisible:true}){var old=wheel;var dismiss=new System.Windows.Threading.DispatcherTimer{Interval=TimeSpan.FromMilliseconds(150)};dismiss.Tick+=(_,_)=>{dismiss.Stop();if(old.IsVisible)old.Close();};dismiss.Start();}wheel=null;}return;}
         if(!down){down=true;start=point;opened=false;hint=null;return;}if(opened||Math.Abs(point.X-start.X)+Math.Abs(point.Y-start.Y)<10)return;
-        hint??=Task.Run(()=>LinkAt(start));var p=preferences.Value;var kind=DragShortcut.Match(Chord(),TriggerHeld,("tools",p.ToolsModifier),("convert",p.ConvertModifier),("actions",p.ActionsModifier));if(kind is null)return;opened=true;if(InMoveSize())return;
+        hint??=Task.Run(()=>LinkAt(start));var chord=Chord();var p=preferences.Value;var kind=DragChord.Wheel(chord,p,TriggerHeld);if(kind is null)return;opened=true;if(InMoveSize())return;
         var sourceHint=hint;wheel=new GlobalDropWheel(kind,p.WheelScale,(data,id)=>dropped(id,data,sourceHint?.IsCompletedSuccessfully==true?sourceHint.Result:null),()=>sourceHint?.IsCompletedSuccessfully==true?sourceHint.Result:null,()=>sourceHint?.IsCompleted!=false);wheel.Show();DesktopGeometry.PlaceWheel(wheel,point.X,point.Y,WheelPresentation.Diameter*p.WheelScale);
     }
     private static string? LinkAt(NativePoint point)

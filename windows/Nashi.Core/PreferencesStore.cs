@@ -6,10 +6,21 @@ public sealed record Preferences
     public string Language{get;init;}="en";
     public bool AutomaticUpdateChecks{get;init;}=true;
     public bool Enabled{get;init;}=true;public bool Feedback{get;init;}=true;public bool Animations{get;init;}=true;public bool KeepInTray{get;init;}=true;public bool RevealFinished{get;init;}
+    public bool ToolsPromptSeen{get;init;}
     public double WheelScale{get;init;}=1;public string WheelFinish{get;init;}="glass";public string FloatBehavior{get;init;}="createNew";
     public string ToolsModifier{get;init;}="Ctrl";public string ConvertModifier{get;init;}="Shift";public string ActionsModifier{get;init;}="Alt";
     public string OutputMode{get;init;}="beside";public string OutputFolder{get;init;}="";public string DownloadFolder{get;init;}=Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),"Downloads");
     public Dictionary<string,OutputProfile> Formats{get;init;}=[];
+}
+/// Names the modifier chord held during a drag and maps it to the wheel it opens.
+public static class DragChord
+{
+    /// The held chord as "Ctrl", "Ctrl+Shift", "Ctrl+Shift+Alt"... in the order Settings uses; empty when no modifier is held.
+    public static string Name(bool ctrl,bool shift,bool alt)=>string.Join('+',new[]{ctrl?"Ctrl":null,shift?"Shift":null,alt?"Alt":null}.OfType<string>());
+    /// The wheel a held chord opens, or null. Only the exact chord chosen in Settings opens a wheel, so Ctrl+Shift
+    /// never falls back to the Ctrl wheel while Tools is set to Ctrl. With `pressed`, a held key or mouse button
+    /// also selects a shortcut that includes it.
+    public static string? Wheel(string chord,Preferences p,Func<string,bool>? pressed=null)=>DragShortcut.Match(chord,pressed??(_=>false),("tools",p.ToolsModifier),("convert",p.ConvertModifier),("actions",p.ActionsModifier));
 }
 public sealed class PreferencesStore
 {

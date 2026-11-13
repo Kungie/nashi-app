@@ -13,6 +13,8 @@ internal static class DragShortcutChecks
         check(Match("Ctrl",null)=="tools"&&Match("",null) is null&&Match("Shift",null) is null,"Plain modifier shortcut matched incorrectly");
         check(Match("","Mouse 4")=="convert"&&Match("Ctrl","Mouse 4")=="tools","Mouse shortcut did not need its exact modifiers");
         check(Match("Ctrl","Mouse 5")=="actions","A held trigger did not beat its plain modifier shortcut");
+        var triggered=new Preferences() with{ActionsModifier="Ctrl+Mouse 4"};
+        check(DragChord.Wheel("Ctrl",triggered,trigger=>trigger=="Mouse 4")=="actions"&&DragChord.Wheel("Ctrl",triggered)=="tools"&&DragChord.Wheel("",triggered,trigger=>trigger=="Mouse 4") is null,"A drag chord did not use the held mouse button");
         check(DragShortcut.Title("Ctrl+D1","en")=="Ctrl+1"&&DragShortcut.Title("Alt+Home","tr")=="Alt+Home","Key names were shown incorrectly");
         check(DragShortcut.Title("Right Click","tr")=="Sağ tık"&&DragShortcut.Title("Ctrl+Mouse 4","tr")=="Ctrl+Fare 4","Mouse button names were not translated");
         var directory=Path.Combine(root,"Drag shortcut preferences");var store=new PreferencesStore(directory);
